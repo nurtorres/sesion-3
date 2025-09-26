@@ -245,3 +245,316 @@ def main():
 **Contacto y mantenimiento**  
 Dejar en `README.md` la forma de contribuir y un CHANGELOG con SemVer.
 
+
+---
+
+# Módulo: `app/win_canvas.py`
+
+Este módulo define la función `open_win_canvas`, responsable de crear y mostrar una ventana secundaria con un **Canvas** para realizar dibujos simples de ejemplo.
+
+## Código
+
+```python
+import tkinter as tk
+from tkinter import ttk
+
+def open_win_canvas(parent: tk.Tk):
+    win = tk.Toplevel(parent)
+    win.title("Canvas (Dibujo)")
+    win.geometry("480x340")
+
+    frm = ttk.Frame(win, padding=12)
+    frm.pack(fill="both", expand=True)
+
+    canvas = tk.Canvas(frm, width=440, height=240, bg="white")
+    canvas.pack()
+
+    # Dibujos de ejemplo
+    canvas.create_rectangle(20, 20, 120, 80, outline="black", width=2)
+    canvas.create_oval(150, 20, 220, 90, fill="lightblue")
+    canvas.create_line(240, 30, 360, 90, width=3)
+    canvas.create_text(220, 140, text="¡Hola Canvas!", font=("Segoe UI", 12, "bold"))
+
+    ttk.Button(frm, text="Cerrar", command=win.destroy).pack(pady=8, anchor="e")
+```
+
+## Explicación paso a paso
+
+1. **Creación de ventana secundaria**
+   - `win = tk.Toplevel(parent)` crea una nueva ventana hija de la raíz (`parent`).  
+   - Se asigna título `"Canvas (Dibujo)"` y tamaño inicial `480x340` píxeles.
+
+2. **Frame contenedor**
+   - `ttk.Frame(win, padding=12)` genera un marco con padding.  
+   - Se usa `.pack(fill="both", expand=True)` para que ocupe todo el espacio disponible.
+
+3. **Widget Canvas**
+   - `tk.Canvas(frm, width=440, height=240, bg="white")` define un área de dibujo blanca.  
+   - Se coloca en el `Frame` con `.pack()`.
+
+4. **Elementos dibujados en el Canvas**
+   - **Rectángulo:** `canvas.create_rectangle(20, 20, 120, 80, outline="black", width=2)` dibuja un rectángulo con borde negro.
+   - **Óvalo:** `canvas.create_oval(150, 20, 220, 90, fill="lightblue")` genera un círculo/óvalo relleno azul claro.
+   - **Línea:** `canvas.create_line(240, 30, 360, 90, width=3)` traza una línea oblicua con grosor 3px.
+   - **Texto:** `canvas.create_text(220, 140, text="¡Hola Canvas!", font=("Segoe UI", 12, "bold"))` escribe un texto en la posición indicada.
+
+5. **Botón de cierre**
+   - `ttk.Button(frm, text="Cerrar", command=win.destroy)` agrega un botón alineado a la derecha (`anchor="e"`).  
+   - Al pulsarlo, se destruye la ventana `Toplevel`.
+
+## Observaciones y buenas prácticas
+
+- Este módulo **no guarda estado**, se limita a mostrar un lienzo con figuras estáticas.  
+- Se puede extender con eventos del ratón (`<Button-1>`, `<B1-Motion>`) para permitir **dibujo interactivo**.  
+- `Canvas` soporta coordenadas absolutas (px), capas (`tag_raise`, `tag_lower`) y animaciones (`after`).
+
+## Posibles extensiones
+
+- Herramienta para dibujar líneas libres con el ratón.  
+- Botón para limpiar el lienzo (`canvas.delete("all")`).  
+- Guardado del contenido del canvas como imagen (`postscript` exportado).  
+- Diferentes colores, grosores y tipografías configurables desde la UI.
+
+---
+
+---
+
+# Módulo: `app/win_form.py`
+
+Este módulo implementa un formulario simple que permite al usuario ingresar un **nombre** y una **edad**, y guardar esos datos en un archivo de texto.
+
+## Código
+
+```python
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox
+
+def open_win_form(parent: tk.Tk):
+    win = tk.Toplevel(parent)
+    win.title("Formulario")
+    win.geometry("420x260")
+    frm = ttk.Frame(win, padding=16)
+    frm.pack(fill="both", expand=True)
+
+    ttk.Label(frm, text="Nombre:").grid(row=0, column=0, sticky="w")
+    ent_nombre = ttk.Entry(frm, width=28)
+    ent_nombre.grid(row=0, column=1, pady=4)
+
+    ttk.Label(frm, text="Edad:").grid(row=1, column=0, sticky="w")
+    ent_edad = ttk.Entry(frm, width=10)
+    ent_edad.grid(row=1, column=1, sticky="w", pady=4)
+
+    def validar_y_guardar():
+        nombre = ent_nombre.get().strip()
+        edad_txt = ent_edad.get().strip()
+        if not nombre:
+            messagebox.showerror("Error", "El nombre es requerido.")
+            return
+        if not edad_txt.isdigit():
+            messagebox.showerror("Error", "La edad debe ser un número entero.")
+            return
+        ruta = filedialog.asksaveasfilename(defaultextension=".txt",
+                                            filetypes=[("Texto", "*.txt")])
+        if ruta:
+            with open(ruta, "w", encoding="utf-8") as f:
+                f.write(f"Nombre: {nombre}\nEdad: {edad_txt}\n")
+            messagebox.showinfo("OK", "Datos guardados.")
+
+    ttk.Button(frm, text="Guardar", command=validar_y_guardar)\
+        .grid(row=3, column=0, pady=12)
+    ttk.Button(frm, text="Cerrar", command=win.destroy)\
+        .grid(row=3, column=1, sticky="e", pady=12)
+```
+
+## Explicación paso a paso
+
+1. **Creación de la ventana**
+   - `tk.Toplevel(parent)` abre una ventana hija con título `"Formulario"` y tamaño `420x260`.
+
+2. **Formulario con `ttk.Frame`**
+   - Se usan `Label` y `Entry` dispuestos con **grid**:
+     - Fila 0: "Nombre" y caja de texto (`ent_nombre`).
+     - Fila 1: "Edad" y caja de texto (`ent_edad`).
+
+3. **Función interna `validar_y_guardar`**
+   - Recupera valores de los campos.
+   - Valida:
+     - Nombre no vacío.
+     - Edad es un número entero (uso de `isdigit()`).
+   - Si la validación falla, muestra `messagebox.showerror`.
+   - Si pasa la validación:
+     - Abre diálogo `filedialog.asksaveasfilename` para elegir dónde guardar.
+     - Escribe el contenido en un archivo `.txt`.
+     - Confirma con `messagebox.showinfo("OK", "Datos guardados.")`.
+
+4. **Botones**
+   - **Guardar:** ejecuta `validar_y_guardar`.
+   - **Cerrar:** destruye la ventana con `win.destroy`.
+
+## Observaciones y buenas prácticas
+
+- Validación mínima: no contempla límites de edad (e.g., 0–120).
+- El guardado es **sin formato estructurado** (solo texto plano). Para interoperabilidad futura se recomienda JSON o CSV.
+- El uso de `with open(...)` asegura cierre automático del archivo.
+- `grid()` se usa aquí en lugar de `pack()`, adecuado para formularios tabulares.
+
+## Posibles extensiones
+
+- Validaciones adicionales (edad mínima/máxima, nombre sin caracteres inválidos).
+- Añadir más campos (correo, teléfono, etc.).
+- Exportar a **CSV** o **JSON** en lugar de `.txt`.
+- Conectar con una base de datos o backend REST.
+- Incorporar pruebas unitarias con `unittest.mock` para simular `filedialog` y `messagebox`.
+
+---
+
+---
+
+# Módulo: `app/win_home.py`
+
+Este módulo implementa la ventana de **inicio / bienvenida** de la aplicación.  
+Su objetivo es dar un mensaje introductorio y probar la interacción con cuadros de diálogo (`messagebox`).
+
+## Código
+
+```python
+import tkinter as tk
+from tkinter import ttk, messagebox
+
+def open_win_home(parent: tk.Tk):
+    win = tk.Toplevel(parent)
+    win.title("Home / Bienvenida")
+    win.geometry("360x220")
+    frm = ttk.Frame(win, padding=16)
+    frm.pack(fill="both", expand=True)
+
+    ttk.Label(frm, text="¡Bienvenid@s!", font=("Segoe UI", 11, "bold")).pack(pady=(0, 8))
+    ttk.Label(frm, text="Explora las ventanas desde la pantalla principal.").pack(pady=(0, 12))
+    ttk.Button(frm, text="Mostrar mensaje",
+               command=lambda: messagebox.showinfo("Info", "¡Equipo listo!")).pack()
+    ttk.Button(frm, text="Cerrar", command=win.destroy).pack(pady=8)
+```
+
+## Explicación paso a paso
+
+1. **Creación de ventana hija**
+   - `tk.Toplevel(parent)` genera una ventana secundaria con título `"Home / Bienvenida"` y tamaño `360x220`.
+
+2. **Frame principal**
+   - Se añade un `ttk.Frame` con padding para contener los widgets.
+
+3. **Etiquetas (`Label`)**
+   - `"¡Bienvenid@s!"` en negritas como encabezado.
+   - Texto secundario que invita a explorar las demás ventanas.
+
+4. **Botones**
+   - **Mostrar mensaje:** al hacer clic ejecuta `messagebox.showinfo("Info", "¡Equipo listo!")`.
+   - **Cerrar:** destruye la ventana con `win.destroy`.
+
+## Observaciones
+
+- Es una ventana simple de bienvenida y prueba de notificaciones.
+- Ideal para mostrar mensajes de estado del sistema o instrucciones iniciales.
+
+## Posibles extensiones
+
+- Mostrar **información dinámica** (ej. versión de la app, fecha/hora actual).
+- Añadir un botón para **abrir documentación** o un **enlace web**.
+- Incluir un logo o imagen con `tk.PhotoImage`.
+
+---
+
+---
+
+# Módulo: `app/win_list.py`
+
+Este módulo implementa una ventana con una **lista básica (Listbox)** y operaciones CRUD simplificadas: agregar, eliminar y limpiar elementos.
+
+## Código
+
+```python
+import tkinter as tk
+from tkinter import ttk, messagebox
+
+def open_win_list(parent: tk.Tk):
+    win = tk.Toplevel(parent)
+    win.title("Lista (CRUD básico)")
+    win.geometry("420x300")
+
+    frm = ttk.Frame(win, padding=12)
+    frm.pack(fill="both", expand=True)
+
+    lb = tk.Listbox(frm, height=10)
+    lb.grid(row=0, column=0, rowspan=4, sticky="nsew", padx=(0, 8))
+    frm.columnconfigure(0, weight=1)
+    frm.rowconfigure(0, weight=1)
+
+    ent_item = ttk.Entry(frm)
+    ent_item.grid(row=0, column=1, sticky="ew")
+
+    def agregar():
+        v = ent_item.get().strip()
+        if v:
+            lb.insert("end", v)
+            ent_item.delete(0, "end")
+        else:
+            messagebox.showwarning("Aviso", "Escribe un texto para agregar.")
+
+    def eliminar():
+        sel = lb.curselection()
+        if sel:
+            lb.delete(sel[0])
+
+    def limpiar():
+        lb.delete(0, "end")
+
+    ttk.Button(frm, text="Agregar", command=agregar).grid(row=1, column=1, sticky="ew", pady=4)
+    ttk.Button(frm, text="Eliminar seleccionado", command=eliminar).grid(row=2, column=1, sticky="ew", pady=4)
+    ttk.Button(frm, text="Limpiar", command=limpiar).grid(row=3, column=1, sticky="ew", pady=4)
+
+    ttk.Button(frm, text="Cerrar", command=win.destroy).grid(row=4, column=0, columnspan=2, pady=10, sticky="e")
+```
+
+## Explicación paso a paso
+
+1. **Ventana secundaria**
+   - `tk.Toplevel(parent)` crea la ventana con título `"Lista (CRUD básico)"` y tamaño inicial `420x300`.
+
+2. **Frame principal**
+   - `ttk.Frame` con padding, empaquetado en `expand=True` para ocupar el área completa.
+
+3. **Listbox**
+   - `tk.Listbox(frm, height=10)` crea la lista.
+   - Disposición en `grid` con `rowspan=4` para alinear con los botones.
+   - Se configura `frm.columnconfigure` y `frm.rowconfigure` para que se expanda correctamente.
+
+4. **Campo de entrada**
+   - `ttk.Entry` para escribir un nuevo ítem a agregar.
+
+5. **Funciones internas**
+   - **`agregar()`**: inserta el texto del entry en la lista. Si está vacío, muestra advertencia.
+   - **`eliminar()`**: borra el elemento actualmente seleccionado (`curselection`).
+   - **`limpiar()`**: elimina todos los elementos (`delete(0, "end")`).
+
+6. **Botones CRUD**
+   - `"Agregar"` llama a `agregar`.
+   - `"Eliminar seleccionado"` llama a `eliminar`.
+   - `"Limpiar"` borra toda la lista.
+
+7. **Botón Cerrar**
+   - `command=win.destroy`, cierra la ventana.
+
+## Observaciones
+
+- Es una implementación **en memoria**: no hay persistencia.
+- `messagebox.showwarning` se usa para reforzar la validación del input vacío.
+- `curselection()` devuelve una tupla con índices seleccionados. Aquí se usa `sel[0]` para el primero.
+
+## Posibles extensiones
+
+- Permitir **edición** de elementos existentes (doble clic → editar).
+- Añadir persistencia en archivo o base de datos.
+- Usar `Listbox` con `selectmode=tk.MULTIPLE` para permitir eliminar varios ítems a la vez.
+- Añadir barra de desplazamiento (`Scrollbar`) para listas largas.
+
+---

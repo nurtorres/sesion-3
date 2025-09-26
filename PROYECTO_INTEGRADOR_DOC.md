@@ -1,0 +1,247 @@
+
+# Proyecto Integrador – MVP (Tkinter)
+Guía técnica y de arquitectura para desarrolladores/as Python.
+
+> **Resumen:** Este proyecto es una app de escritorio hecha con **Tkinter** que centraliza varias ventanas (Home, Formulario, Lista CRUD, Tabla con `Treeview` y Canvas) desde una ventana principal. El módulo de entrada orquesta la navegación invocando funciones `open_win_*` definidas en el paquete `app`.
+
+---
+
+## 1) Estructura prevista del proyecto
+
+```
+proyecto/
+├─ main.py                     # Punto de entrada (este archivo)
+└─ app/
+   ├─ __init__.py
+   ├─ win_home.py              # def open_win_home(root): ...
+   ├─ win_form.py              # def open_win_form(root): ...
+   ├─ win_list.py              # def open_win_list(root): ...
+   ├─ win_table.py             # def open_win_table(root): ...
+   └─ win_canvas.py            # def open_win_canvas(root): ...
+```
+
+> **Nota:** En este documento solo se recibió el contenido de `main.py`. Las descripciones de los módulos `app.win_*` se infieren a partir de sus nombres y convenciones comunes de Tkinter.
+
+---
+
+## 2) Requisitos
+
+- **Python 3.8+** (recomendado 3.10 o superior)
+- **Tkinter** (incluido por defecto en la mayoría de instalaciones de Python en Windows/macOS. En algunas distros Linux puede requerir `sudo apt-get install python3-tk`).
+- No se observan dependencias de terceros más allá de la biblioteca estándar.
+
+---
+
+## 3) Ejecución
+
+Desde la raíz del proyecto:
+
+```bash
+python main.py
+```
+
+La ventana principal se abre con el título **"Proyecto Integrador - MVP"** y tamaño inicial **420x340**.
+
+---
+
+## 4) Walkthrough del código (`main.py`)
+
+```python
+import tkinter as tk
+from tkinter import ttk
+from app.win_home import open_win_home
+from app.win_form import open_win_form
+from app.win_list import open_win_list
+from app.win_table import open_win_table
+from app.win_canvas import open_win_canvas
+```
+
+- **`tkinter`/`ttk`**: construcción de UI. `ttk` provee widgets con estilo nativo.
+- **Importaciones `open_win_*`**: funciones de fábrica/creación de ventanas (p.ej. `tk.Toplevel`) que reciben la raíz (`root`) para gestionar jerarquía, foco y modality (si aplica).
+
+```python
+def main():
+    root = tk.Tk()
+    root.title("Proyecto Integrador - MVP")
+    root.geometry("420x340")
+
+    frame = ttk.Frame(root, padding=16)
+    frame.pack(fill="both", expand=True)
+```
+- Se crea la **raíz** de Tk y un `Frame` contenedor con padding para alojar los controles.
+
+```python
+    ttk.Label(frame, text="Aplicación Demo (tkinter)", font=("Segoe UI", 12, "bold")).pack(pady=(0, 12))
+```
+- Encabezado visual de la app.
+
+```python
+    ttk.Button(frame, text="1) Home / Bienvenida", command=lambda: open_win_home(root)).pack(pady=4, fill="x")
+    ttk.Button(frame, text="2) Formulario",        command=lambda: open_win_form(root)).pack(pady=4, fill="x")
+    ttk.Button(frame, text="3) Lista (CRUD básico)", command=lambda: open_win_list(root)).pack(pady=4, fill="x")
+    ttk.Button(frame, text="4) Tabla (Treeview)",  command=lambda: open_win_table(root)).pack(pady=4, fill="x")
+    ttk.Button(frame, text="5) Canvas (Dibujo)",   command=lambda: open_win_canvas(root)).pack(pady=4, fill="x")
+```
+- Cada botón **desacopla** la lógica de UI: la ventana principal solo **invoca** a la función correspondiente del submódulo, siguiendo el patrón _command callbacks_.  
+- **`lambda: open_win_xxx(root)`** asegura que el `root` se pase en tiempo de click.
+
+```python
+    ttk.Separator(frame).pack(pady=6, fill="x")
+    ttk.Button(frame, text="Salir", command=root.destroy).pack(pady=6)
+```
+- Separador visual y botón para **cerrar la app** invocando `root.destroy()`.
+
+```python
+    root.mainloop()
+```
+- Bucle de eventos de Tk.
+
+```python
+if __name__ == "__main__":
+    main()
+```
+- Ejecuta `main()` si el módulo es lanzado directamente (no importado).
+
+---
+
+## 5) Contratos esperados de las ventanas (`app.win_*`)
+
+Aunque no se recibieron los archivos, un contrato coherente sería:
+
+- Cada módulo define una función pública `open_win_*(root) -> tk.Toplevel|None` que:
+  - Crea una `tk.Toplevel(root)` para su propia UI.
+  - Configura título, tamaño y widgets.
+  - Maneja el **ciclo de vida** (p.ej., `protocol("WM_DELETE_WINDOW", ...)`).
+  - Puede interactuar con **estado compartido** (si existiera) mediante inyección o patrones (ver §6).
+
+**Sugerencias por pantalla:**
+- **`win_home`**: texto de bienvenida, versión, atajos.
+- **`win_form`**: campos `ttk.Entry`, validación, botones Guardar/Cancelar.
+- **`win_list`**: lista con operaciones CRUD simples (alta/baja/modificación en memoria).
+- **`win_table`**: `ttk.Treeview` con columnas, encabezados, sort al click, scrollbars.
+- **`win_canvas`**: `tk.Canvas` con herramientas de dibujo (línea, rectángulo, limpiar).
+
+---
+
+## 6) Arquitectura y patrones recomendados
+
+- **Separación por módulo (ya aplicada):** cada ventana en su archivo. Facilita pruebas y mantenimiento.
+- **Patrón Controlador / Servicio:** encapsular lógica de negocio en clases o funciones fuera de la UI.
+- **Estado compartido** (opcional):
+  - Definir un objeto `AppState` (p.ej., `dataclasses.dataclass`) que viva en `main` y se pase a cada `open_win_*` si se requiere compartir datos (lista de elementos, configuración, etc.).
+- **Mensajería entre ventanas:**
+  - Señales simples a través de callbacks: pasar funciones `on_saved`, `on_deleted`, etc.
+  - O usar `event_generate`/`bind` con eventos personalizados `<<ItemSaved>>`.
+
+---
+
+## 7) Gestión de errores y UX
+
+- En cada `open_win_*`, envolver operaciones de E/S en `try/except` y notificar con `tk.messagebox`.
+- Deshabilitar botones mientras se procesa (`state="disabled"`) y reactivarlos al terminar.
+- Validación de formularios con `register` y `validatecommand` (Tk).
+
+---
+
+## 8) Estilo y consistencia (UI)
+
+- Mantener **tipografías** coherentes: `("Segoe UI", 10)` en Windows, `("SF Pro Text", 12)` en macOS (opcional).
+- Usar **`ttk.Style()`** para un tema consistente (p.ej., `"clam"`, `"alt"`, `"vista"`).
+- Margen vertical uniforme (`pady=4/6/12`) y `fill="x"` para botones primarios.
+
+---
+
+## 9) Extender con una nueva ventana
+
+1. Crear `app/win_about.py`:
+   ```python
+   import tkinter as tk
+   from tkinter import ttk
+
+   def open_win_about(root):
+       win = tk.Toplevel(root)
+       win.title("Acerca de")
+       ttk.Label(win, text="Proyecto Integrador – v1.0").pack(padx=16, pady=16)
+       ttk.Button(win, text="Cerrar", command=win.destroy).pack(pady=8)
+       return win
+   ```
+2. Importar en `main.py`:
+   ```python
+   from app.win_about import open_win_about
+   ```
+3. Añadir botón:
+   ```python
+   ttk.Button(frame, text="6) Acerca de", command=lambda: open_win_about(root)).pack(pady=4, fill="x")
+   ```
+
+---
+
+## 10) Pruebas rápidas (manuales)
+
+- Lanzar la app y abrir cada ventana.
+- Intentar cerrar la raíz con ventanas hijas abiertas (confirmar que se cierran en cascada o que la raíz gestiona el cierre).
+- Verificar que `win_list` mantiene el estado si se vuelve a abrir (si ese es el comportamiento deseado).
+
+---
+
+## 11) Buenas prácticas de empaquetado
+
+- Añadir `pyproject.toml` o `requirements.txt` si se incorporan dependencias futuras.
+- Configurar **`__all__`** en `app/__init__.py` si se exportan APIs.
+- Usar **PEP 8**: nombres de funciones en `snake_case`, constantes en `UPPER_SNAKE_CASE`.
+
+---
+
+## 12) Limitaciones conocidas (con la info recibida)
+
+- No se incluyen los archivos `app/win_*.py`. La documentación sobre esas ventanas es inferida.
+- No se define persistencia (BD/archivo); se asume estado en memoria.
+- No hay internacionalización (i18n) ni pruebas automatizadas.
+
+---
+
+## 13) Snippet del `main.py` anotado
+
+```python
+def main():
+    root = tk.Tk()                                # Crea la ventana raíz
+    root.title("Proyecto Integrador - MVP")       # Título
+    root.geometry("420x340")                      # Tamaño inicial (px ancho x alto)
+
+    frame = ttk.Frame(root, padding=16)           # Contenedor principal con padding
+    frame.pack(fill="both", expand=True)          # Expandir para ocupar todo el espacio
+
+    ttk.Label(frame, text="Aplicación Demo (tkinter)", font=("Segoe UI", 12, "bold")).pack(pady=(0, 12))
+
+    # Navegación a ventanas hijas (desacopladas)
+    ttk.Button(frame, text="1) Home / Bienvenida",   command=lambda: open_win_home(root)).pack(pady=4, fill="x")
+    ttk.Button(frame, text="2) Formulario",          command=lambda: open_win_form(root)).pack(pady=4, fill="x")
+    ttk.Button(frame, text="3) Lista (CRUD básico)", command=lambda: open_win_list(root)).pack(pady=4, fill="x")
+    ttk.Button(frame, text="4) Tabla (Treeview)",    command=lambda: open_win_table(root)).pack(pady=4, fill="x")
+    ttk.Button(frame, text="5) Canvas (Dibujo)",     command=lambda: open_win_canvas(root)).pack(pady=4, fill="x")
+
+    ttk.Separator(frame).pack(pady=6, fill="x")     # Separador visual
+    ttk.Button(frame, text="Salir", command=root.destroy).pack(pady=6)  # Cerrar app
+
+    root.mainloop()                                 # Bucle de eventos de Tk
+```
+
+---
+
+## 14) Roadmap sugerido
+- Añadir **persistencia** (SQLite con `sqlite3` del stdlib o `peewee`).
+- Incorporar **tests** con `pytest` y pruebas de UI mínimas (p.ej., `pytest-tkinter`/`pytest-xvfb` en CI).
+- Sistema de **temas** (oscuro/claro) con `ttk.Style()`.
+- Manejo de **configuración** en `~/.config/proyecto/config.toml`.
+
+---
+
+## 15) Licencia y créditos
+- Definir una licencia (MIT/BSD/Apache-2.0) y un archivo `LICENSE`.
+- Añadir `README.md` con badges y capturas de pantalla cuando estén las ventanas finales.
+
+---
+
+**Contacto y mantenimiento**  
+Dejar en `README.md` la forma de contribuir y un CHANGELOG con SemVer.
+
